@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <title>Crypto Anlaysis</title>
+</head>
+
+<body>
+
+    <button onclick="readJSON()">find price</button>
+    <div id="output"></div>
+
+</body>
+
+    <script>
+        function readJSON(){
+            $.ajax({
+                "url": "http://127.0.0.1:5000/dataset",
+                "method":"GET",
+                "data": "",
+                "dataType": "JSON",
+                contentType: "application/json; charset=utf-8",
+                "success":function(result){
+                    console.log(result);
+                    document.getElementById("output").innerHTML = JSON.stringify(result.filtered_dataset);
+                },
+                "error":function(xhr,status,error){
+                    console.log("error: "+status+" msg:"+error);
+                }
+            });
+        }
+    </script>
+
+</html>
