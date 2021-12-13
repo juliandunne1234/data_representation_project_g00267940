@@ -5,33 +5,131 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <title>Crypto Anlaysis</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="style.css">
+
+    <title>Crypto Analysis</title>
 </head>
 
 <body>
+    <!-- <div class="container-1">
+        <h2>Bitcoin Unfiltered Data</h2>
+        <div class="flex-box-container-1">
+            <button onclick="price_unfiltered()" class="btn-lg btn-success">Bitcoin Prices(unfiltered)</button>
+            <div id="price_unfiltered"></div>
+        </div>
+    </div> -->
 
-    <button onclick="readJSON()">find price</button>
-    <div id="output"></div>
+    <!-- <div class="container-1">
+        <h2>Bitcoin Filtered Data</h2>
+        <div class="flex-box-container-1">
+            <button onclick="price_filtered()" class="btn-lg btn-success">Bitcoin Prices(filtered)</button>
+            <div id="price_filtered"></div>
+        </div>
+    </div> -->
+
+
+    <div class="container-1">
+        <h2>Bitcoin Filtered Data using Form Dates</h2>
+        <div class="flex-box-container-1">
+            <form >
+                <label>Start date</label>
+                <input id="start_date" name="start_date" type="date" min="2015-11-30" max="2021-11-30">
+                <label>End date</label>
+                <input id="end_date" name="end_date" type="date" min="2015-11-30" max="2021-11-30">
+                <button onclick="get_dates()" class="btn-lg btn-success">Bitcoin Prices(filtered form)</button>
+                <div id="price_filtered_form"></div>
+            </form>
+        </div>
+    </div>
+
+
+    <div class="container-1">
+        <div class="flex-box-container-1">
+            <div id="once-off">
+                <h2>Purchased All at Once: Profit $ <span id="once_off_purchase">0</span></h2>
+            </div>
+
+            <div id="increments">
+                <h2>Purchased Every 14 Days: Profit $ <span id="incremental_purchases">0</span></h2>
+            </div>
+        </div>
+    </div>
 
 </body>
 
-    <script>
-        function readJSON(){
+    <script>      
+        // function price_unfiltered(){
+        //     $.ajax({
+        //         "url": "http://127.0.0.1:5000/price_unfiltered",
+        //         "method":"GET",
+        //         "data": "",
+        //         "dataType": "JSON",
+        //         contentType: "application/json; charset=utf-8",
+        //         "success":function(result){
+        //             console.log(result);
+        //             document.getElementById("price_unfiltered").innerHTML = JSON.stringify(result.unfiltered_dataset);
+        //         },
+        //         "error":function(xhr,status,error){
+        //             console.log("error: "+status+" msg:"+error);
+        //         }
+        //     });
+        // }
+
+        // function price_filtered(){
+        //     $.ajax({
+        //         "url": "http://127.0.0.1:5000/price_filtered",
+        //         "method":"GET",
+        //         "data": "",
+        //         "dataType": "JSON",
+        //         contentType: "application/json; charset=utf-8",
+        //         "success":function(result){
+        //             console.log(result);
+        //             document.getElementById("price_filtered").innerHTML = JSON.stringify(result.filtered_dataset);
+        //             // document.getElementById("once_off_purchase").innerHTML = JSON.stringify(result.filtered_dataset[0]['bitcoin_price']);
+        //         },
+        //         "error":function(xhr,status,error){
+        //             console.log("error: "+status+" msg:"+error);
+        //         }
+        //     });
+        // }
+
+        // function that stores the start and end dates in json format
+        function get_dates() {
+            event.preventDefault();
+            var start_date = document.getElementById("start_date").value;
+            var end_date = document.getElementById("end_date").value;
+            
+            var server_dates = [
+                {"start_date": start_date},
+                {"end_date": end_date}
+            ];
+
+            price_filtered_form(server_dates);
+        }
+
+        // function that POSTs start and end dates to the server to collect historical bitcoin values  
+        function price_filtered_form(server_dates){
             $.ajax({
-                "url": "http://127.0.0.1:5000/dataset",
-                "method":"GET",
-                "data": "",
+                "url": "http://127.0.0.1:5000/price_filtered_form",
+                "method":"POST",
+                "data": JSON.stringify(server_dates),
                 "dataType": "JSON",
                 contentType: "application/json; charset=utf-8",
                 "success":function(result){
                     console.log(result);
-                    document.getElementById("output").innerHTML = JSON.stringify(result.filtered_dataset);
+                    document.getElementById("price_filtered_form").innerHTML = JSON.stringify(result.filtered_dataset_form);
+
+                    document.getElementById("once_off_purchase").innerHTML = JSON.stringify(result.filtered_dataset_form[0]['bitcoin_price']) - JSON.stringify(result.filtered_dataset_form[1]['bitcoin_price']);
                 },
                 "error":function(xhr,status,error){
                     console.log("error: "+status+" msg:"+error);
                 }
             });
         }
+
+        
+
     </script>
 
 </html>
