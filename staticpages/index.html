@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <title>Crypto Display</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+
+<body style="background-color:grey;">   
+    <div class="container-fluid">
+        <div id="create-update" style="display:none">
+            <table id="createUpdateForm" class="table table-bordered text-center">
+                <tr>
+                    <td><b>symbol</b></td>
+                    <td><input type="text" name="id" id="idInput"></td>
+                </tr>
+                <tr>
+                    <td><b>crypto name</b></td>
+                    <td><input type="text" name="cryptocurrency" id="nameInput"></td>
+                </tr>
+                <tr>
+                    <td><b>current_price (USD)</b></td><td>
+                    <input type="float" name="USD_price"></td>
+                </tr>
+                <tr>
+                    <td><td></td>
+                        <button id="create-button" onclick="doCreate()" class="btn btn-primary">Add/Edit Coin</button>
+                        <button id="update-button" onclick="doUpdate()" class="btn btn-warning">Update</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div id="display" class="text-center">
+            <h2>
+                <button onclick="showCreate()" class="btn btn-success" title="add crypto to your wallet">Add Cryptocurrency</button>
+            </h2>
+            
+            <table id="cryptoTable" class="table table-bordered">
+                <tr>
+                    <th>symbol</th>
+                    <th>crypto name</th>
+                    <th>current_price (USD)</th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="container-fluid text-center">
+        <h2><button id="crypto-exchange" onclick="checkExchange()" class="btn btn-primary">Coingecko Exchange Prices</button></h2>
+        <div id="exchangeOutput"></div>
+        <table id="exchangeTable" class="table table-bordered">
+            <tr>
+                <th>symbol</th><th>crypto name</th><th>current price</th>
+            </tr>
+        </table>
+    </div>
+</body>
+    <script>
+        function showCreate(){
+            document.getElementById('display').style.display="none";
+            document.getElementById('update-button').style.display="none";
+            document.getElementById('create-button').style.display="block";
+            document.getElementById('create-update').style.display="block";
+        }
+
+        function showCrypto(){
+            document.getElementById('display').style.display="none";
+            document.getElementById('update-button').style.display="none";
+            document.getElementById('create-button').style.display="none";
+            document.getElementById('create-update').style.display="none";
+        }
+
+        function showUpdate(thisElem){
+            let rowElement = thisElem.parentNode.parentNode
+            crypto = readCryptoFromRow(rowElement)
+            populateForm(crypto)
+
+            document.getElementById('display').style.display="none";
+            document.getElementById('update-button').style.display="block";
+            document.getElementById('create-button').style.display="none";
+            document.getElementById('create-update').style.display="block";
+        }
+
+        function readCryptoFromRow(rowElement){
+            crypto = {}
+            crypto.id = rowElement.getAttribute("id")
+            crypto.cryptocurrency = rowElement.cells[1].firstChild.textContent
+            crypto.USD_price = rowElement.cells[2].firstChild.textContent
+            return crypto
+        }
+
+        function populateForm(crypto){
+            let form = document.getElementById('createUpdateForm')
+            
+            form.querySelector('input[name="id"]').value = crypto.id
+            document.getElementById("idInput").disabled = true
+
+            form.querySelector('input[name="cryptocurrency"]').value = crypto.cryptocurrency
+            document.getElementById("nameInput").disabled = true
+
+            form.querySelector('input[name="USD_price"]').value = crypto.USD_price
+        }
+
+        function clearForm(){
+            let form = document.getElementById('createUpdateForm')
+            
+            form.querySelector('input[name="id"]').value = ''
+            document.getElementById("idInput").disabled = false
+
+            form.querySelector('input[name="cryptocurrency"]').value = ''
+            form.querySelector('input[name="USD_price"]').value = ''
+        }
+
+        function checkExchange() {
+            $.ajax({
+                "url": "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false",
+                "method":"GET",
+                "data":"",
+                "dataType": "JSON",
+                "success":function(results){
+                    for (result of results) {
+                        seeCrypto(result)
+                    }
+                },
+                "error":function(xhr,status,error){
+                    console.log("error: "+status+" msg:"+error);
+                }
+            });
+        }
+
+        function seeCrypto(result){
+            var tableElement = document.getElementById('exchangeTable')
+            var rowElement = tableElement.insertRow(-1)
+            rowElement.setAttribute('symbol',result.symbol)
+            var cell1 = rowElement.insertCell(0);
+            cell1.innerHTML = result.symbol
+            var cell2 = rowElement.insertCell(1);
+            cell2.innerHTML = result.name
+            var cell3 = rowElement.insertCell(2);
+            cell3.innerHTML = result.current_price
+        }
+
+        function doCreate(){
+            cryptoConfig = getCryptoFromForm();
+            $.ajax({
+                url: 'http://127.0.0.1:5000/cryptos',
+                method: 'POST',
+                data: JSON.stringify(cryptoConfig),
+                dataType: 'JSON',
+                contentType: "application/json; charset=utf-8",
+                success:function(results){
+                    addCryptoToTable(cryptoConfig)
+                    showDisplay();
+                    clearForm()
+                },
+                error:function(xhr, status, error){
+                    console.log("error " + error + " code:" +code)
+                }
+            })
+        }
+
+        function doUpdate(){
+            cryptoConfig = getCryptoFromForm()
+            updateServer(cryptoConfig) 
+        }
+
+        function updateServer(crypto){
+            $.ajax({
+                url: 'http://127.0.0.1:5000/cryptos/' + crypto.id,
+                data: JSON.stringify(crypto),
+                method: 'PUT',
+                dataType: 'JSON',
+                contentType: "application/json; charset=utf-8",
+                success:function(result){
+                    updateTableRow(crypto)
+                    showDisplay();
+                },
+                error:function(xhr, status, error){
+                    console.log("error " + error)
+                }
+            })
+        }
+
+        function doDelete(thisElem){
+            let tableElement = document.getElementById('cryptoTable')
+            let rowElement = thisElem.parentNode.parentNode
+            let index = rowElement.rowIndex
+            cryptocurrency = rowElement.getAttribute("cryptocurrency")
+            $.ajax({
+                url: 'http://127.0.0.1:5000/cryptos/' + cryptocurrency,
+                method: 'DELETE',
+                dataType: 'JSON',
+                contentType: "application/json; charset=utf-8",
+                success:function(result){
+                    tableElement.deleteRow(index)
+                },
+                error:function(xhr, status, error){
+                    console.log(error);
+                }
+            })
+        }
+
+        function updateTableRow(cryptoConfig){
+            rowElement = document.getElementById(cryptoConfig.id)
+            rowElement.cells[1].firstChild.textContent = cryptoConfig.cryptocurrency
+            rowElement.cells[2].firstChild.textContent = cryptoConfig.USD_price
+        }
+
+        function getCryptoFromForm(){
+            let form = document.getElementById('createUpdateForm')
+            let crypto = {}
+            crypto.id = form.querySelector('input[name="id"]').value
+            crypto.cryptocurrency = form.querySelector('input[name="cryptocurrency"]').value
+            crypto.USD_price = form.querySelector('input[name="USD_price"]').value
+            return crypto
+        }
+
+        function showDisplay(){
+            document.getElementById('display').style.display="block"
+            document.getElementById('create-update').style.display="none"
+        }
+         
+        function populateTable(){
+            $.ajax({
+                url: 'http://127.0.0.1:5000/cryptos',
+                method: 'GET',
+                dataType: 'JSON',
+                success:function(results){
+                    for (cryptoConfig of results){
+                        addCryptoToTable(cryptoConfig)
+                    }
+                },
+                error:function(xhr, status, error){
+                    console.log("error " + error + " code:" +code);
+                }
+            })
+        }
+
+        function addCryptoToTable(cryptoConfig){
+            let tableElem = document.getElementById("cryptoTable")
+            let rowElem = tableElem.insertRow(-1)
+            rowElem.setAttribute("id", cryptoConfig.id)
+            rowElem.setAttribute("cryptocurrency", cryptoConfig.cryptocurrency)
+            cell1 = rowElem.insertCell(0)
+            cell1.innerHTML = cryptoConfig.id
+            cell2 = rowElem.insertCell(1)
+            cell2.innerHTML = cryptoConfig.cryptocurrency
+            cell3 = rowElem.insertCell(2)
+            cell3.innerHTML = cryptoConfig.USD_price
+            cell1 = rowElem.insertCell(3)
+            cell1.innerHTML = '<button onclick="showUpdate(this)" class="btn btn-warning">Update</button>'
+            cell1 = rowElem.insertCell(4)
+            cell1.innerHTML = '<button onclick="doDelete(this)" class="btn btn-danger">Delete</button>'
+        }
+        populateTable()
+        
+    </script>
+    
+
+</html>
